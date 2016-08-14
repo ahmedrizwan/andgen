@@ -1,4 +1,3 @@
-#####################################################################
 module Helper
   def colorize(text, color = "default", bgColor = "default")
     colors = {"default" => "38", "black" => "30", "red" => "31", "green" => "32", "brown" => "33", "blue" => "34", "purple" => "35",
@@ -130,7 +129,7 @@ module ArgumentsChecker
         return :bindable_layout
       end
     end
-    :nothing
+    false
   end
 
   def arg_command
@@ -185,6 +184,41 @@ module Generator
 
 end
 
+class LayoutGenerator
+  include Generator
+
+  def get_template
+    return '<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+</LinearLayout>'
+  end
+
+  def underscore(camel_cased_word)
+    camel_cased_word.to_s.gsub(/::/, '/').
+        gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').
+        gsub(/([a-z\d])([A-Z])/, '\1_\2').
+        tr("-", "_").
+        downcase
+  end
+
+  def create_layout_file
+    file_name = ARGV[1]
+    file_name = underscore file_name
+    Dir.glob("**/main/res/**/*").select { |d|
+      if d.to_s.end_with? 'layout'
+        file = d+'/'+file_name+'.xml'
+        File.open(file, 'w') { |file| file.write get_template }
+
+        created file
+      end
+    }
+  end
+end
+
 class ActivityGenerator
   include Generator
 
@@ -204,8 +238,21 @@ public class #{name} extends AppCompatActivity
 }"
   end
 
-  def verify_args
-    if ARGV.length == 2
+  def package_exists folders_hash
+    d = Dir.glob("**/main/java/**/*").select {
+        |d|
+      if folders_hash.key? (File.basename d)
+        folders_hash[File.basename d] = true
+        if folders_hash.keys.last.to_s == File.basename(d).to_s
+          return d
+        end
+      end
+    }
+    return false
+  end
+
+  def create_activity package
+    if package == :nothing
       d = Dir.glob("**/main/java/**/*").last
 
       if d.to_s.end_with? '.java'
@@ -214,15 +261,62 @@ public class #{name} extends AppCompatActivity
         file = d+'/'+ARGV[1]+'.java'
       end
 
+      if File.file?(file)
+        puts error(file +" already exists!")
+        return
+      end
+
       File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
 
       created file
+    else
+      folders = package.to_s.split('.')
+      folders_hash = folders.map { |x| [x, false] }.to_h
+      #find the first folder
+      dir = package_exists folders_hash
+      case dir
+        when false
+
+        else
+          #simply create the Activity inside the package
+          file = dir+'/'+ARGV[1]+'.java'
+          if File.file?(file)
+            puts error(file +" already exists!")
+            return
+          end
+
+          File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
+
+          created file
+      end
+    end
+
+  end
+
+  def create_layout
+    if arg_layout
+      LayoutGenerator.new.create_layout_file
+      return true
+    end
+    false
+  end
+
+  def verify_args
+    if ARGV.length == 2
+      create_activity :nothing
+    elsif ARGV.length == 3
+      unless create_layout
+        # the third argument is the package
+        create_activity ARGV[2]
+      else
+        create_activity :nothing
+      end
+
     end
   end
 
 end
 
-####################################################################
 include Helper
 include ArgumentsChecker
 
