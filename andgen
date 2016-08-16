@@ -119,6 +119,24 @@ module Helper
     default_message
   end
 
+  def is_numeric input
+    true if Integer(input) rescue false
+  end
+
+  def create_file file, template
+    File.open(file, 'w') { |file| file.write(template) }
+    created file
+  end
+
+  def find_me_manifest
+    d = Dir.glob("**/main/**/*").select {
+      |file|
+      if File.basename(file).to_s == 'AndroidManifest.xml'
+        return file
+      end
+    }
+    return :nothing
+  end
 end
 
 module ArgumentsChecker
@@ -185,6 +203,53 @@ module Generator
     return module_or_not
   end
 
+  def resolve_package folders_hash
+    paths = []
+    path = ""
+    d = Dir.glob("**/main/java/**/*").select {
+        |d|
+      if folders_hash.key? (File.basename d)
+        folders_hash[File.basename d] = true
+        paths << d
+      end
+    }
+    if paths.length > 1
+      puts yellow 'Package conflict - Select one from the following'
+      index = 0
+      paths.each do |p|
+        puts "#{index+1}. " + p
+        index+=1
+      end
+      path = get_selection(paths)
+    elsif paths.length == 1
+      return paths[0]
+    end
+    return path
+  end
+
+  def get_selection(paths)
+    begin
+      selection = STDIN.gets
+    rescue Interrupt => e
+      exit
+    end
+    if is_numeric(selection) and selection.to_i > 0 and selection.to_i < paths.length+1
+      path = paths[selection.to_i - 1]
+    else
+      puts yellow 'Wrong input, select again '
+      get_selection(paths)
+    end
+    path
+  end
+
+  def create_layout
+    if arg_layout
+      LayoutGenerator.new.create_layout_file
+      return true
+    end
+    false
+  end
+
 end
 
 class LayoutGenerator
@@ -225,10 +290,6 @@ end
 class ActivityGenerator
   include Generator
 
-  def is_numeric input
-    true if Integer(input) rescue false
-  end
-
   def get_template name
     return "import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -245,45 +306,6 @@ public class #{name} extends AppCompatActivity
 }"
   end
 
-  def resolve_package folders_hash
-    paths = []
-    path = ""
-    d = Dir.glob("**/main/java/**/*").select {
-        |d|
-      if folders_hash.key? (File.basename d)
-        folders_hash[File.basename d] = true
-        paths << d
-      end
-    }
-    if paths.length > 1
-      puts yellow 'Package conflict - Select one from the following'
-      index = 0
-      paths.each do |p|
-        puts "#{index+1}. " + p
-        index+=1
-      end
-      path = get_selection(paths)
-    elsif paths.length == 1
-      return paths[0]
-    end
-    return path
-  end
-
-  def get_selection(paths)
-    begin
-      selection = STDIN.gets
-    rescue Interrupt => e
-      exit
-    end
-    if is_numeric(selection) and selection.to_i > 0 and selection.to_i < paths.length+1
-      path = paths[selection.to_i - 1]
-    else
-      puts yellow 'Wrong input, select again '
-      get_selection(paths)
-    end
-    path
-  end
-
   def create_activity package
     #check for package conflicts
     if package == :no_package
@@ -297,10 +319,8 @@ public class #{name} extends AppCompatActivity
         puts error(file +" already exists!")
         return
       end
+      create_file file, get_template(ARGV[1])
 
-      File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
-
-      created file
     else
       folders = package.to_s.split('.')
       folders_hash = folders.map { |x| [x, false] }.to_h
@@ -334,17 +354,37 @@ public class #{name} extends AppCompatActivity
         File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
 
         created file
-
       end
+    end
+    add_activity_to_manifest ARGV[1]
+  end
+
+  def add_activity_to_manifest(activity)
+    path = find_me_manifest
+    case path
+      when :nothing
+        puts error 'Manifest not found!'
+      else
+        puts path
+        lines = File.readlines(path)
+        line_number = 0
+        lines.each do |line|
+          if line.to_s.include?('</application>')
+            lines[line_number-1] << get_manifest_activity(activity)
+          end
+          line_number = line_number+1
+        end
+        File.open(path, 'w') { |file|
+          lines.each { |line|
+            file.puts line
+          }
+        }
     end
   end
 
-  def create_layout
-    if arg_layout
-      LayoutGenerator.new.create_layout_file
-      return true
-    end
-    false
+  def get_manifest_activity activity
+    "        <activity android:name=\".#{activity}\">
+        </activity>"
   end
 
   def verify_args
@@ -378,4 +418,4 @@ def run_command command
   end
 end
 
-run_command arg_command
+run_command(arg_command)
