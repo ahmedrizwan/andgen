@@ -226,7 +226,7 @@ class ActivityGenerator
   include Generator
 
   def is_numeric input
-    true if Float(input) rescue false
+    true if Integer(input) rescue false
   end
 
   def get_template name
@@ -270,7 +270,11 @@ public class #{name} extends AppCompatActivity
   end
 
   def get_selection(paths)
-    selection = STDIN.gets
+    begin
+      selection = STDIN.gets
+    rescue Interrupt => e
+      exit
+    end
     if is_numeric(selection) and selection.to_i > 0 and selection.to_i < paths.length+1
       path = paths[selection.to_i - 1]
     else
