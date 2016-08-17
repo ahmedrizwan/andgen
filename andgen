@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
-module Helper
+module MessagePrinter
+
   def colorize(text, color = "default", bgColor = "default")
     colors = {"default" => "38", "black" => "30", "red" => "31", "green" => "32", "brown" => "33", "blue" => "34", "purple" => "35",
               "cyan" => "36", "gray" => "37", "dark gray" => "1;30", "light red" => "1;31", "light green" => "1;32", "yellow" => "1;33",
@@ -25,182 +26,81 @@ module Helper
     "#{colorize(message, "yellow")}"
   end
 
-  def arg_is_zero
-    ARGV.length == 0
+  def use_help
+    puts "Use --help to see available commands."
   end
 
-  def arg_is_one
-    ARGV.length == 1
+  def command_not_found
+    puts
+    puts error("Command not found, use --help to see available commands.")
   end
 
-  def arg_is_two
-    ARGV.length == 2
+  def wrong_number_of_args
+    puts error("Wrong number of arguments, use --help to see correct format and commands.")
   end
 
-  def default_message
-    puts 'Use --help for available android generators'
+  def not_correct_format
+    puts error("Not a correct format, use --help to see available options.")
+  end
+
+  def flags_and_package_optional
+    puts "-l  : Generates a layout file"
+    puts "-bl : Generates a bindable layout file"
+    puts
+    puts "Package and Layout flags are optional"
+    puts
+  end
+
+  def activity_examples
+    puts
+    puts yellow("Example : ") + "andgen activity [-l or -bl] MainActivity [some.package]"
+    puts
+    flags_and_package_optional
   end
 
   def created file
     puts "#{colorize("  Created   ", "yellow")}"+file
   end
 
-  def process_single_arg
-    case ARGV[0].to_s.downcase
-      when '--help'
-        puts yellow "Android Generators"
-        puts yellow("  Command          ")+ "|" + yellow("   Arguments       ")
-        puts '  ------------------------------------------------------------------'
-        puts '  Activity         |   [ActivityName] '
-        puts '  Fragment         |   [FragmentName] '
-        puts '  Layout           |   [layout_name] '
-        puts '  ------------------------------------------------------------------'
-        puts
-        puts yellow "Mosby Generators"
-        puts yellow("  Command          ")+ "|" + yellow("   Arguments       ")
-        puts '  ------------------------------------------------------------------'
-        puts '  MvpActivity      |   [ActivityName] '
-        puts '  MvpLceActivity   |   [ActivityName] [ContentView] [Model] '
-        puts '  MvpFragment      |   [FragmentName] '
-        puts '  MvpLceFragment   |   [FragmentName] [ContentView] [Model] '
-        puts '  ------------------------------------------------------------------'
-        puts
-        puts yellow "Conductor Generators"
-        puts yellow("  Command          ")+ "|" + yellow("   Arguments       ")
-        puts '  ------------------------------------------------------------------'
-        puts '  Conductor        |   [ConductorName] '
-        puts '  MvpConductor     |   [ConductorName] '
-        puts '  MvpLceConductor  |   [ConductorName] [ContentView] [Model] '
-        puts '  ------------------------------------------------------------------'
-        puts
-        puts yellow "Optional flags"
-        puts yellow("  Flag             ")+ "|" + yellow("   Definition       ")
-        puts '  ------------------------------------------------------------------'
-        puts '  -l               |   Generates layout file '
-        puts '  -bl              |   Generates bindable layout file '
-        puts '  ------------------------------------------------------------------'
-        puts
-
-        puts 'By default, class file will be generated and placed inside the top-most package'
-        return
-      when '--version'
-        puts 'Andgen v1.0.0'
-        return
-      when 'activity'
-        puts yellow("Example : ") + "andgen Activity MainActivity -l some.package"
-        return
-      when 'fragment'
-        puts yellow("Example : ") + "andgen Fragment MainFragment -l some.package"
-        return
-      when 'layout'
-        puts yellow("Example : ") + "andgen Layout main_layout -bl"
-        return
-      when 'mvpactivity'
-        puts yellow("Example : ") + "andgen MvpActivity MainActivity -l some.package"
-        return
-      when 'mvplceactivity'
-        puts yellow("  Command          ")+ "|" + yellow("   Arguments       ")
-        puts '  MvpLceActivity   |   [ActivityName] [ContentView] [Model] '
-        puts
-        puts yellow("Example : ") + "andgen MvpLceActivity MainActivity RecyclerView List<String> -l some.package"
-        return
-      when 'mvpfragment'
-        return
-      when 'mvplcefragment'
-        return
-      when 'conductor'
-        return
-      when 'mvpconductor'
-        return
-      when 'mvplceconductor'
-        return
-    end
-    error 'Incorrect command'
-    default_message
+  def updated file
+    puts "#{colorize("  Updated   ", "green")}"+file
   end
 
-  def is_numeric input
-    true if Integer(input) rescue false
+  def help_0
+    puts yellow "Android Generators"
+    puts yellow("  Command          ")+ "|" + yellow("   Arguments       ")
+    puts '  -------------------------------------------------------------------'
+    puts '  activity         |  Optional[Flag] [ActivityName] Optional[Package]'
+    puts '  fragment         |  Optional[Flag] [FragmentName] Optional[Package]'
+    puts '  layout           |  Optional[Flag] [layout_name] Optional[Package] '
+    puts '  -------------------------------------------------------------------'
+    puts
+    puts yellow "Optional flags"
+    puts yellow("  Flag             ")+ "|" + yellow("   Definition       ")
+    puts '  ------------------------------------------------------------------'
+    puts '  -l               |   Generates layout file '
+    puts '  -bl              |   Generates bindable layout file '
+    puts '  ------------------------------------------------------------------'
+    puts
+    puts 'Default package: top-most is selected.'
   end
 
-  def create_file file, template
-    File.open(file, 'w') { |file| file.write(template) }
-    created file
-  end
-
-  def find_me_manifest
-    d = Dir.glob("**/main/**/*").select {
-      |file|
-      if File.basename(file).to_s == 'AndroidManifest.xml'
-        return file
-      end
-    }
-    return :nothing
+  def version_0
+    puts 'Andgen v1.0.0'
   end
 end
 
-module ArgumentsChecker
+module Helper
 
-  def arg_layout
-    ARGV.each do |arg|
-      if arg == '-l'
-        return :layout
-      elsif arg == '-bl'
-        return :bindable_layout
-      end
-    end
-    false
-  end
-
-  def arg_command
-    accepted_commands = ['activity', 'fragment']
-    if arg_is_one
-      process_single_arg
-      return true
-    elsif ARGV.length>1
-      command = ARGV[0].to_s.downcase
-      if accepted_commands.to_a.include?(command)
-        return command
+  def is_flag? flag_or_name
+    case flag_or_name
+      when '-l'
+        return true
+      when '-bl'
+        return true
       else
         return false
-      end
     end
-    false
-  end
-
-end
-
-module Generator
-  require 'fileutils'
-
-  def module_check
-    @module_dir = Dir.pwd
-    if module_or_not
-      return true
-    elsif check_for_default_module
-      return true
-    else
-      error 'Make sure you are at module root'
-    end
-  end
-
-  def module_or_not
-    Dir.chdir(@module_dir)
-    Dir.glob("*").select { |d|
-      if File.basename(d).to_s == 'src'
-        return true
-      end
-    }
-    return false
-  end
-
-  def check_for_default_module
-    Dir.glob("*").select { |d|
-      if File.basename(d).to_s == 'app'
-        @module_dir = @module_dir + "/" + d
-      end
-    }
-    return module_or_not
   end
 
   def resolve_package folders_hash
@@ -227,6 +127,21 @@ module Generator
     return path
   end
 
+  def create_file file, template
+    File.open(file, 'w') { |file| file.write(template) }
+    created file
+  end
+
+  def find_me_manifest
+    d = Dir.glob("**/main/**/*").select {
+        |file|
+      if File.basename(file).to_s == 'AndroidManifest.xml'
+        return file
+      end
+    }
+    return :nothing
+  end
+
   def get_selection(paths)
     begin
       selection = STDIN.gets
@@ -242,55 +157,42 @@ module Generator
     path
   end
 
-  def create_layout
-    if arg_layout
-      LayoutGenerator.new.create_layout_file
-      return true
+  def is_numeric input
+    true if Integer(input) rescue false
+  end
+
+  def add_activity_to_manifest(activity)
+    path = find_me_manifest
+    case path
+      when :nothing
+        puts error 'Manifest not found!'
+      else
+        lines = File.readlines(path)
+        line_number = 0
+        lines.each do |line|
+          if line.to_s.include?('</application>')
+            lines[line_number-1] << get_manifest_activity(activity)
+          end
+          line_number = line_number+1
+        end
+        File.open(path, 'w') { |file|
+          lines.each { |line|
+            file.puts line
+          }
+        }
+        updated path
     end
-    false
+  end
+
+  def get_manifest_activity activity
+    "        <activity android:name=\".#{activity}\">
+        </activity>"
   end
 
 end
 
-class LayoutGenerator
-  include Generator
-
-  def get_template
-    return '<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
-
-</LinearLayout>'
-  end
-
-  def underscore(camel_cased_word)
-    camel_cased_word.to_s.gsub(/::/, '/').
-        gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').
-        gsub(/([a-z\d])([A-Z])/, '\1_\2').
-        tr("-", "_").
-        downcase
-  end
-
-  def create_layout_file
-    file_name = ARGV[1]
-    file_name = underscore file_name
-    Dir.glob("**/main/res/**/*").select { |d|
-      if d.to_s.end_with? 'layout'
-        file = d+'/'+file_name+'.xml'
-        File.open(file, 'w') { |file| file.write get_template }
-
-        created file
-      end
-    }
-  end
-end
-
-class ActivityGenerator
-  include Generator
-
-  def get_template name
+module Templates
+  def activity_template name
     return "import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -306,116 +208,209 @@ public class #{name} extends AppCompatActivity
 }"
   end
 
-  def create_activity package
-    #check for package conflicts
-    if package == :no_package
-      d = Dir.glob("**/main/java/**/*").last
-      if d.to_s.end_with? '.java'
-        file = File.dirname(d)+'/'+ARGV[1]+'.java'
-      else
-        file = d+'/'+ARGV[1]+'.java'
-      end
+  def layout_template
+    return '<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+</LinearLayout>'
+  end
+end
+
+module Activity
+
+  def activity_0
+    activity_examples
+  end
+
+  def activity_1 flag_or_name
+    if is_flag?(flag_or_name)
+      activity_examples
+    else
+      create_activity flag_or_name
+    end
+  end
+
+  def activity_2 flag_or_name, package_or_name
+    if is_flag? flag_or_name
+      create_layout_file package_or_name
+      create_activity package_or_name
+    else
+      create_activity_package flag_or_name, package_or_name
+    end
+  end
+
+  def activity_3 flag, name, package
+    if is_flag? flag
+      create_layout_file name
+      create_activity_package name, package
+    else
+      not_correct_format
+    end
+  end
+
+  def create_activity file_name
+    d = Dir.glob("**/main/java/**/*").last
+    if d.to_s.end_with? '.java'
+      file = File.dirname(d)+'/'+file_name+'.java'
+    else
+      file = d+'/'+ARGV[1]+'.java'
+    end
+    if File.file?(file)
+      puts error(file +" already exists!")
+      return
+    end
+    create_file file, activity_template(file_name)
+    add_activity_to_manifest file_name
+  end
+
+  def create_activity_package file_name, package
+    folders = package.to_s.split('.')
+    folders_hash = folders.map { |x| [x, false] }.to_h
+    #find the first folder
+    dir = resolve_package folders_hash
+    if folders_hash.values.all? { |x| x==true }
+      #simply create the Activity inside the package
+      file = dir+'/'+file_name+'.java'
       if File.file?(file)
         puts error(file +" already exists!")
         return
       end
-      create_file file, get_template(ARGV[1])
+      File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
 
+      created file
+      add_activity_to_manifest file_name
     else
-      folders = package.to_s.split('.')
-      folders_hash = folders.map { |x| [x, false] }.to_h
-      #find the first folder
-      dir = resolve_package folders_hash
-      if folders_hash.values.all? { |x| x==true }
-        #simply create the Activity inside the package
-        file = dir+'/'+ARGV[1]+'.java'
-        if File.file?(file)
-          puts error(file +" already exists!")
-          return
+      complete_path = dir
+      folders_hash.select {
+          |d|
+        puts d
+        unless folders_hash[d]
+          complete_path = complete_path+'/'+d
+          puts complete_path
+          FileUtils.mkdir_p(complete_path)
         end
-        File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
-
-        created file
-      else
-        complete_path = dir
-        folders_hash.select {
-            |d|
-          unless folders_hash[d]
-            complete_path = complete_path+'/'+d
-            FileUtils::mkdir_p complete_path
-          end
-        }
-        #simply create the Activity inside the package
-        file = complete_path+'/'+ARGV[1]+'.java'
-        if File.file?(file)
-          puts error(file +" already exists!")
-          return
-        end
-        File.open(file, 'w') { |file| file.write(get_template(ARGV[1])) }
-
-        created file
+      }
+      #simply create the Activity inside the package
+      file = complete_path+'/'+file_name+'.java'
+      if File.file?(file)
+        puts error(file +" already exists!")
+        return
       end
-    end
-    add_activity_to_manifest ARGV[1]
-  end
+      File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
 
-  def add_activity_to_manifest(activity)
-    path = find_me_manifest
-    case path
-      when :nothing
-        puts error 'Manifest not found!'
-      else
-        puts path
-        lines = File.readlines(path)
-        line_number = 0
-        lines.each do |line|
-          if line.to_s.include?('</application>')
-            lines[line_number-1] << get_manifest_activity(activity)
-          end
-          line_number = line_number+1
-        end
-        File.open(path, 'w') { |file|
-          lines.each { |line|
-            file.puts line
-          }
-        }
+      created file
+      add_activity_to_manifest file_name
     end
-  end
 
-  def get_manifest_activity activity
-    "        <activity android:name=\".#{activity}\">
-        </activity>"
-  end
-
-  def verify_args
-    if ARGV.length == 2
-      create_activity :no_package
-    elsif ARGV.length == 3
-      unless create_layout
-        # the third argument is the package
-        create_activity ARGV[2]
-      else
-        create_activity :no_package
-      end
-    end
   end
 
 end
 
+module Layout
+
+  def underscore(camel_cased_word)
+    camel_cased_word.to_s.gsub(/::/, '/').
+        gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').
+        gsub(/([a-z\d])([A-Z])/, '\1_\2').
+        tr("-", "_").
+        downcase
+  end
+
+  def create_layout_file camel_file_name
+    file_name = underscore camel_file_name
+    Dir.glob("**/main/res/**/*").select { |d|
+      if d.to_s.end_with? 'layout'
+        file = d+'/'+file_name+'.xml'
+        if File.file?(file)
+          puts error(file +" already exists!")
+          return
+        end
+        File.open(file, 'w') { |file| file.write layout_template }
+
+        created file
+      end
+    }
+  end
+end
+
+class ArgumentsHandler
+
+  def start
+    case ARGV.length
+      when 0
+        handle_zero_args
+      when 1
+        handle_one_arg ARGV[0]
+      when 2
+        handle_two_args ARGV[0], ARGV[1]
+      when 3
+        handle_three_args ARGV[0], ARGV[1], ARGV[2]
+      when 4
+        handle_four_args ARGV[0], ARGV[1], ARGV[2], ARGV[3]
+      else
+        handle_wrong_num_args
+    end
+  end
+
+  def command_is_accepted? command
+    accepted_commands = ['activity', 'fragment', '--help', '--version']
+    accepted_commands.to_a.include?(command)
+  end
+
+  def handle_zero_args
+    use_help
+  end
+
+  def handle_one_arg command
+    #check if the command is accepted
+    if command_is_accepted? command
+      send(command.to_s.sub('--', '')+'_0')
+    else
+      command_not_found
+    end
+  end
+
+  def handle_two_args command, flag_or_name
+    if command_is_accepted? command
+      send(command+'_1', flag_or_name)
+    else
+      command_not_found
+    end
+  end
+
+  def handle_three_args command, flag_or_name, package
+    if command_is_accepted? command
+      send(command+'_2', flag_or_name, package)
+    else
+      command_not_found
+    end
+  end
+
+  def handle_four_args command, flag, name, package
+    if command_is_accepted? command
+      send(command+'_3', flag, name, package)
+    else
+      command_not_found
+    end
+  end
+
+  def handle_wrong_num_args
+    wrong_number_of_args
+  end
+
+end
+
+require 'fileutils'
+
+include MessagePrinter
 include Helper
-include ArgumentsChecker
+include Activity
+include Layout
+include Templates
 
-def run_command command
-  case command
-    when 'activity'
-      ActivityGenerator.new.verify_args
-    when 'fragment'
+ArgumentsHandler.new.start
 
-    when true
-      #ignore : it means that the command was processed so no need to go further with it
-    else
-      error("Command not found, use --help to see available commands.")
-  end
-end
 
-run_command(arg_command)
