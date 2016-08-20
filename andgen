@@ -430,7 +430,7 @@ class ArgumentsHandler
         when 4
           handle_four_args ARGV[0], ARGV[1], ARGV[2], ARGV[3]
         else
-          handle_wrong_num_args
+          wrong_number_of_args
       end
     end
 
@@ -476,10 +476,6 @@ class ArgumentsHandler
     else
       command_not_found
     end
-  end
-
-  def handle_wrong_num_args
-    wrong_number_of_args
   end
 
 end
