@@ -61,6 +61,9 @@ module MessagePrinter
   def layout_examples
     puts
     puts yellow("Example : ") + "andgen layout layout_name"
+    puts yellow("Example : ") + "andgen layout -bl layout_name"
+    puts
+    puts yellow("-bl ")+"flag will generate a Bindable layout!"
     puts
   end
 
@@ -94,6 +97,7 @@ module MessagePrinter
   def version_0
     puts 'Andgen v1.0.0'
   end
+
 end
 
 module Helper
@@ -246,11 +250,23 @@ module Helper
         </activity>"
   end
 
+  def get_me_path_for path
+    Dir.chdir(@module_dir)
+    src_path = @module_dir+path
+    FileUtils.mkpath src_path
+    target_path = Dir.glob(src_path+"/**/*").last
+    target_path = src_path if target_path == nil
+    if target_path.to_s.end_with? '.xml'
+      target_path = File.dirname target_path
+    end
+    target_path
+  end
 end
 
 module Templates
-  def activity_template name
-    return "import android.support.v7.app.AppCompatActivity;
+  def activity_template name, package
+    return "#{package}
+import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 public class #{name} extends AppCompatActivity
@@ -263,6 +279,10 @@ public class #{name} extends AppCompatActivity
     }
 
 }"
+  end
+
+  def fragment_template name
+
   end
 
   def layout_template
@@ -331,25 +351,14 @@ module Activity
       puts error(file +" already exists!")
       return
     end
-    create_file file, activity_template(file_name)
+    create_activity_files(file, file_name, File.dirname(target_path))
 
-    add_activity_to_manifest '', file_name
-  end
-
-  def get_me_path_for path
-    Dir.chdir(@module_dir)
-    src_path = @module_dir+path
-    FileUtils.mkpath src_path
-    target_path = Dir.glob(src_path+"/**/*").last
-    target_path = src_path if target_path == nil
-    if target_path.to_s.end_with? '.xml'
-      target_path = File.dirname target_path
-    end
-    target_path
   end
 
   def create_activity_package file_name, package
     package_path = resolve_package package
+    puts package_path
+
     if package_path
       #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
@@ -357,14 +366,95 @@ module Activity
         puts error(file +" already exists!")
         return
       end
-      File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
-      created file
-      package_for_manifest = package_path.to_s.gsub('/', '.').split('.')
-      package_for_manifest.delete_at(0)
-      package_for_manifest = package_for_manifest.join('.')
+      create_activity_files(file, file_name, package_path)
+    end
+  end
 
-      puts package_for_manifest
-      add_activity_to_manifest package_for_manifest.to_s, file_name
+  def create_activity_files(file, file_name, package_path)
+    target_path = package_path
+    target_array = target_path.to_s.split('/')
+    package = []
+    add = false
+    target_array.select {
+        |e|
+      if add
+        package << e
+      end
+
+      if e == 'java'
+        add = true
+      end
+    }
+    if package.length>0
+      package = package.to_a.join('.')
+      package_statement = 'package '+ package+';'
+      create_file file, activity_template(file_name, package_statement)
+      add_activity_to_manifest package, file_name
+    else
+      create_file file, activity_template(file_name, '')
+    end
+  end
+
+end
+
+module Fragment
+
+  def fragment_0
+    fragment_examples
+  end
+
+  def fragment_1 flag_or_name
+    if is_flag?(flag_or_name)
+      fragment_examples
+    else
+      create_fragment flag_or_name
+    end
+  end
+
+  def fragment_2 flag_or_name, package_or_name
+    if is_flag? flag_or_name
+      create_layout_file flag_or_name, package_or_name
+      create_fragment package_or_name
+    else
+      create_fragment_package flag_or_name, package_or_name
+    end
+  end
+
+  def fragment_3 flag, name, package
+    if is_flag? flag
+      create_layout_file flag, name
+      create_fragment_package name, package
+    else
+      not_correct_format
+    end
+  end
+
+  def create_fragment file_name
+    target_path = get_me_path_for "/src/main/java"
+
+    if target_path.to_s.end_with? '.java'
+      file = File.dirname(target_path)+'/'+file_name+'.java'
+    else
+      file = target_path+'/'+file_name+'.java'
+    end
+    if File.file?(file)
+      puts error(file +" already exists!")
+      return
+    end
+    create_file file, fragment_template(file_name)
+  end
+
+  def create_fragment_package file_name, package
+    package_path = resolve_package package
+    if package_path
+      #simply create the Fragment inside the package
+      file = package_path.to_s+'/'+file_name+'.java'
+      if File.file?(file)
+        puts error(file +" already exists!")
+        return
+      end
+      File.open(file, 'w') { |file| file.write(fragment_template(file_name)) }
+      created file
     end
   end
 
@@ -495,6 +585,7 @@ require 'fileutils'
 include MessagePrinter
 include Helper
 include Activity
+include Fragment
 include Layout
 include Templates
 
