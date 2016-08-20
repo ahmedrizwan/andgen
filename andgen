@@ -53,7 +53,14 @@ module MessagePrinter
 
   def activity_examples
     puts
-    puts yellow("Example : ") + "andgen activity [-l or -bl] MainActivity [some.package]"
+    puts yellow("Example : ") + "andgen activity [-l or -bl] YourActivity [some.package]"
+    puts
+    flags_and_package_optional
+  end
+
+  def fragment_examples
+    puts
+    puts yellow("Example : ") + "andgen fragment [-l or -bl] YourFragment [some.package]"
     puts
     flags_and_package_optional
   end
