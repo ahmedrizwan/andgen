@@ -58,6 +58,12 @@ module MessagePrinter
     flags_and_package_optional
   end
 
+  def layout_examples
+    puts
+    puts yellow("Example : ") + "andgen layout layout_name"
+    puts
+  end
+
   def created file
     puts "#{colorize("  Created   ", "yellow")}"+file
   end
@@ -374,9 +380,16 @@ module Layout
         downcase
   end
 
-  def create_layout_file flag, camel_file_name
+  def create_layout_file flag, layout_name
+    #return if it's not a flag
+    if !flag.to_s.eql? '-l' and !flag.to_s.eql? '-bl'
+      error '-l or -bl expected as flag!'
+      layout_examples
+      return
+    end
+    #it is a flag :)
     layout_path = get_me_path_for "/src/main/res/layout"
-    file_name = underscore camel_file_name
+    file_name = underscore layout_name
     file = layout_path+'/'+file_name+'.xml'
     if File.file?(file)
       puts error(file +" already exists!")
@@ -385,12 +398,31 @@ module Layout
 
     if flag == '-l'
       File.open(file, 'w') { |f| f.write layout_template }
-    else
+    elsif flag == '-bl'
       File.open(file, 'w') { |f| f.write bindable_layout_template }
+    else
+      error '-l or -bl expected as flag!'
+      layout_examples
+      return
     end
     created file
   end
 
+  def layout_0
+    layout_examples
+  end
+
+  def layout_1 name
+    create_layout_file '-l', name
+  end
+
+  def layout_2 flag, name
+    create_layout_file flag, name
+  end
+
+  def layout_3 a1, a2, a3
+    wrong_number_of_args
+  end
 end
 
 class ArgumentsHandler
@@ -416,8 +448,8 @@ class ArgumentsHandler
   end
 
   def command_is_accepted? command
-    accepted_commands = ['activity', 'fragment', '--help', '--version']
-    accepted_commands.to_a.include?(command)
+    accepted_commands = ['activity', 'fragment', 'layout', '--help', '--version']
+    accepted_commands.to_a.include?(command.to_s.downcase)
   end
 
   def handle_zero_args
@@ -427,7 +459,7 @@ class ArgumentsHandler
   def handle_one_arg command
     #check if the command is accepted
     if command_is_accepted? command
-      send(command.to_s.sub('--', '')+'_0')
+      send(command.to_s.downcase.sub('--', '')+'_0')
     else
       command_not_found
     end
@@ -435,7 +467,7 @@ class ArgumentsHandler
 
   def handle_two_args command, flag_or_name
     if command_is_accepted? command
-      send(command+'_1', flag_or_name)
+      send(command.to_s.downcase+'_1', flag_or_name)
     else
       command_not_found
     end
@@ -443,7 +475,7 @@ class ArgumentsHandler
 
   def handle_three_args command, flag_or_name, package
     if command_is_accepted? command
-      send(command+'_2', flag_or_name, package)
+      send(command.to_s.downcase+'_2', flag_or_name, package)
     else
       command_not_found
     end
@@ -451,7 +483,7 @@ class ArgumentsHandler
 
   def handle_four_args command, flag, name, package
     if command_is_accepted? command
-      send(command+'_3', flag, name, package)
+      send(command.to_s.downcase+'_3', flag, name, package)
     else
       command_not_found
     end
