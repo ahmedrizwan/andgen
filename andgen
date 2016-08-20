@@ -477,7 +477,6 @@ class ArgumentsHandler
       command_not_found
     end
   end
-
 end
 
 require 'fileutils'
