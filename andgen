@@ -288,8 +288,52 @@ public class #{name} extends AppCompatActivity
 }"
   end
 
-  def fragment_template name
+  def fragment_template name, package
+    return "#{package}
 
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class #{name} extends Fragment
+{
+
+    public #{name}()
+    {
+        // Required empty public constructor
+    }
+
+}"
+  end
+
+  def fragment_layout_template name, package
+    return "#{package}
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+public class #{name} extends Fragment
+{
+
+    public #{name}()
+    {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState)
+    {
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.#{underscore(name)}, container, false);
+    }
+
+}"
   end
 
   def layout_template
@@ -414,29 +458,29 @@ module Fragment
     if is_flag?(flag_or_name)
       fragment_examples
     else
-      create_fragment flag_or_name
+      create_fragment flag_or_name, false
     end
   end
 
   def fragment_2 flag_or_name, package_or_name
     if is_flag? flag_or_name
       create_layout_file flag_or_name, package_or_name
-      create_fragment package_or_name
+      create_fragment package_or_name, true
     else
-      create_fragment_package flag_or_name, package_or_name
+      create_fragment_package flag_or_name, package_or_name, false
     end
   end
 
   def fragment_3 flag, name, package
     if is_flag? flag
       create_layout_file flag, name
-      create_fragment_package name, package
+      create_fragment_package name, package, true
     else
       not_correct_format
     end
   end
 
-  def create_fragment file_name
+  def create_fragment file_name, layout_version
     target_path = get_me_path_for "/src/main/java"
 
     if target_path.to_s.end_with? '.java'
@@ -448,23 +492,80 @@ module Fragment
       puts error(file +" already exists!")
       return
     end
-    create_file file, fragment_template(file_name)
+    if layout_version
+      create_layout_fragment_files(file, file_name, File.dirname(target_path))
+    else
+      create_fragment_files(file, file_name, File.dirname(target_path))
+    end
+
   end
 
-  def create_fragment_package file_name, package
+  def create_fragment_package file_name, package, layout_version
     package_path = resolve_package package
+    puts package_path
+
     if package_path
-      #simply create the Fragment inside the package
+      #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
       if File.file?(file)
         puts error(file +" already exists!")
         return
       end
-      File.open(file, 'w') { |file| file.write(fragment_template(file_name)) }
-      created file
+      if layout_version
+        create_layout_fragment_files(file, file_name, package_path)
+      else
+        create_fragment_files(file, file_name, package_path)
+      end
     end
   end
 
+  def create_fragment_files(file, file_name, package_path)
+    target_path = package_path
+    target_array = target_path.to_s.split('/')
+    package = []
+    add = false
+    target_array.select {
+        |e|
+      if add
+        package << e
+      end
+
+      if e == 'java'
+        add = true
+      end
+    }
+    if package.length>0
+      package = package.to_a.join('.')
+      package_statement = 'package '+ package+';'
+      create_file file, fragment_template(file_name, package_statement)
+    else
+      create_file file, fragment_template(file_name, '')
+    end
+  end
+
+  def create_layout_fragment_files(file, file_name, package_path)
+    target_path = package_path
+    target_array = target_path.to_s.split('/')
+    package = []
+    add = false
+    target_array.select {
+        |e|
+      if add
+        package << e
+      end
+
+      if e == 'java'
+        add = true
+      end
+    }
+    if package.length>0
+      package = package.to_a.join('.')
+      package_statement = 'package '+ package+';'
+      create_file file, fragment_layout_template(file_name, package_statement)
+    else
+      create_file file, fragment_layout_template(file_name, '')
+    end
+  end
 end
 
 module Layout
