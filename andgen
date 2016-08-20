@@ -103,17 +103,42 @@ module Helper
     end
   end
 
-  def resolve_package folders_hash
+  def resolve_package package
+    #check if the source path is found
+    Dir.glob('**/src/main/').select {
+        |d|
+      puts d
+      src_path = d
+    }
+    if src_path == ''
+      error ('Source path not found i.e. /src/main/java/')
+      return
+    end
+
+    #create package path and return it
+    folders = package.to_s.split('.')
+    folders_hash = folders.map { |x| [x, false] }.to_h
+    path_from_package = package.to_s.gsub '.', '/'
     paths = []
     path = ""
+    #find the path
+    src_path = ''
     d = Dir.glob("**/main/java/**/*").select {
         |d|
-      if folders_hash.key? (File.basename d)
-        folders_hash[File.basename d] = true
+      if d.to_s.end_with? path_from_package
         paths << d
       end
     }
-    if paths.length > 1
+    src_path = src_path+'java/'
+    if paths.length == 0
+      #create the package manually
+      puts 'Creating teh package manually'
+      package_path = src_path+path_from_package
+      puts package_path
+      FileUtils.mkdir_p(package_path)
+    elsif paths.length == 1
+      return paths[0]
+    else
       puts yellow 'Package conflict - Select one from the following'
       index = 0
       paths.each do |p|
@@ -121,10 +146,39 @@ module Helper
         index+=1
       end
       path = get_selection(paths)
-    elsif paths.length == 1
-      return paths[0]
+      return path
     end
-    return path
+  end
+
+  def resolve_module
+    if ARGV.length <= 1
+      return true
+    end
+    @module_dir = Dir.pwd
+    if module_or_not
+      return true
+    else
+      error 'Make sure you are at module root'
+    end
+  end
+
+  def module_or_not
+    Dir.chdir(@module_dir)
+    Dir.glob("*").select { |d|
+      if File.basename(d).to_s == 'src'
+        return true
+      end
+    }
+    return false
+  end
+
+  def check_for_default_module
+    Dir.glob("*").select { |d|
+      if File.basename(d).to_s == 'app'
+        @module_dir = @module_dir + "/" + d
+      end
+    }
+    return module_or_not
   end
 
   def create_file file, template
@@ -217,6 +271,17 @@ public class #{name} extends AppCompatActivity
 
 </LinearLayout>'
   end
+
+  def bindable_layout_template
+    return '<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<LinearLayout android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+</LinearLayout>
+</layout>'
+  end
 end
 
 module Activity
@@ -235,7 +300,7 @@ module Activity
 
   def activity_2 flag_or_name, package_or_name
     if is_flag? flag_or_name
-      create_layout_file package_or_name
+      create_layout_file flag_or_name, package_or_name
       create_activity package_or_name
     else
       create_activity_package flag_or_name, package_or_name
@@ -244,7 +309,7 @@ module Activity
 
   def activity_3 flag, name, package
     if is_flag? flag
-      create_layout_file name
+      create_layout_file flag, name
       create_activity_package name, package
     else
       not_correct_format
@@ -252,11 +317,12 @@ module Activity
   end
 
   def create_activity file_name
-    d = Dir.glob("**/main/java/**/*").last
-    if d.to_s.end_with? '.java'
-      file = File.dirname(d)+'/'+file_name+'.java'
+    target_path = get_me_path_for "/src/main/java"
+
+    if target_path.to_s.end_with? '.java'
+      file = File.dirname(target_path)+'/'+file_name+'.java'
     else
-      file = d+'/'+ARGV[1]+'.java'
+      file = target_path+'/'+file_name+'.java'
     end
     if File.file?(file)
       puts error(file +" already exists!")
@@ -266,44 +332,54 @@ module Activity
     add_activity_to_manifest file_name
   end
 
+  def get_me_path_for path
+    Dir.chdir(@module_dir)
+    src_path = @module_dir+path
+    FileUtils.mkpath src_path
+    target_path = Dir.glob(src_path+"/**/*").last
+    target_path = src_path if target_path == nil
+    target_path
+  end
+
   def create_activity_package file_name, package
-    folders = package.to_s.split('.')
-    folders_hash = folders.map { |x| [x, false] }.to_h
+    package_path = resolve_package package
+
+
     #find the first folder
-    dir = resolve_package folders_hash
-    if folders_hash.values.all? { |x| x==true }
-      #simply create the Activity inside the package
-      file = dir+'/'+file_name+'.java'
-      if File.file?(file)
-        puts error(file +" already exists!")
-        return
-      end
-      File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
-
-      created file
-      add_activity_to_manifest file_name
-    else
-      complete_path = dir
-      folders_hash.select {
-          |d|
-        puts d
-        unless folders_hash[d]
-          complete_path = complete_path+'/'+d
-          puts complete_path
-          FileUtils.mkdir_p(complete_path)
-        end
-      }
-      #simply create the Activity inside the package
-      file = complete_path+'/'+file_name+'.java'
-      if File.file?(file)
-        puts error(file +" already exists!")
-        return
-      end
-      File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
-
-      created file
-      add_activity_to_manifest file_name
-    end
+    # dir = resolve_package package
+    # if folders_hash.values.all? { |x| x }
+    #   #simply create the Activity inside the package
+    #   file = dir+'/'+file_name+'.java'
+    #   if File.file?(file)
+    #     puts error(file +" already exists!")
+    #     return
+    #   end
+    #   File.open(file, 'w') { |file| file.write(activity_template(file_name)) }
+    #
+    #   created file
+    #   add_activity_to_manifest file_name
+    # else
+    #   complete_path = dir
+    #   folders_hash.select {
+    #       |d|
+    #     puts d
+    #     unless folders_hash[d]
+    #       complete_path = complete_path+'/'+d
+    #       puts complete_path
+    #       FileUtils.mkdir_p(complete_path)
+    #     end
+    #   }
+    #   #simply create the Activity inside the package
+    #   file = complete_path+'/'+file_name+'.java'
+    #   if File.file?(file)
+    #     puts error(file +" already exists!")
+    #     return
+    #   end
+    #   File.open(file, 'w') { |f| f.write(activity_template(file_name)) }
+    #
+    #   created file
+    #   add_activity_to_manifest file_name
+    # end
 
   end
 
@@ -319,40 +395,45 @@ module Layout
         downcase
   end
 
-  def create_layout_file camel_file_name
+  def create_layout_file flag, camel_file_name
+    puts 'Create Layout'
+    layout_path = get_me_path_for "/src/main/res/layout"
     file_name = underscore camel_file_name
-    Dir.glob("**/main/res/**/*").select { |d|
-      if d.to_s.end_with? 'layout'
-        file = d+'/'+file_name+'.xml'
-        if File.file?(file)
-          puts error(file +" already exists!")
-          return
-        end
-        File.open(file, 'w') { |file| file.write layout_template }
+    file = layout_path+'/'+file_name+'.xml'
+    if File.file?(file)
+      puts error(file +" already exists!")
+      return
+    end
 
-        created file
-      end
-    }
+    if flag == '-l'
+      File.open(file, 'w') { |f| f.write layout_template }
+    else
+      File.open(file, 'w') { |f| f.write bindable_layout_template }
+    end
+    created file
   end
 end
 
 class ArgumentsHandler
 
   def start
-    case ARGV.length
-      when 0
-        handle_zero_args
-      when 1
-        handle_one_arg ARGV[0]
-      when 2
-        handle_two_args ARGV[0], ARGV[1]
-      when 3
-        handle_three_args ARGV[0], ARGV[1], ARGV[2]
-      when 4
-        handle_four_args ARGV[0], ARGV[1], ARGV[2], ARGV[3]
-      else
-        handle_wrong_num_args
+    if resolve_module
+      case ARGV.length
+        when 0
+          handle_zero_args
+        when 1
+          handle_one_arg ARGV[0]
+        when 2
+          handle_two_args ARGV[0], ARGV[1]
+        when 3
+          handle_three_args ARGV[0], ARGV[1], ARGV[2]
+        when 4
+          handle_four_args ARGV[0], ARGV[1], ARGV[2], ARGV[3]
+        else
+          handle_wrong_num_args
+      end
     end
+
   end
 
   def command_is_accepted? command
