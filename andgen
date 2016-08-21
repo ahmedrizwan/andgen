@@ -88,7 +88,7 @@ module MessagePrinter
     puts '  -------------------------------------------------------------------'
     puts '  activity         |  Optional[Flag] [ActivityName] Optional[Package]'
     puts '  fragment         |  Optional[Flag] [FragmentName] Optional[Package]'
-    puts '  layout           |  Optional[Flag] [layout_name] Optional[Package] '
+    puts '  layout           |  Optional[Flag] [layout_name] '
     puts '  -------------------------------------------------------------------'
     puts
     puts yellow "Optional flags"
