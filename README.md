@@ -2,7 +2,7 @@
 #Andgen
 
 
-A terminal based templates generator for Android!
+A terminal based templates generator for Android! It's similar to what 'rails generate' command does on Ruby on Rails.
 
 ###Why?
 Because terminals are awesome! That's why!
