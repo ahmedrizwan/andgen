@@ -408,8 +408,6 @@ module Activity
 
   def create_activity_package file_name, package
     package_path = resolve_package package
-    puts package_path
-
     if package_path
       #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
@@ -502,8 +500,6 @@ module Fragment
 
   def create_fragment_package file_name, package, layout_version
     package_path = resolve_package package
-    puts package_path
-
     if package_path
       #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
