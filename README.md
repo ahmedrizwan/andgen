@@ -7,7 +7,7 @@ A terminal based templates generator for Android!
 ###Why?
 Because terminals are awesome! That's why!
 
-###Installation?
+###Installation
 Using HomeBrew
 ```
 brew tap ahmedrizwan/andgen
