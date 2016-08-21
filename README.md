@@ -76,7 +76,7 @@ andgen layout -bl my_layout
 ###TODO
 * Add more templates : EmptyActivity, ListActivity and so on
 * Add third party templates for : Mosby, Conductor etc
-* Fix bugs if there are any (of course)
+* Fix bugs (of course)
 
 ##License 
 ```
