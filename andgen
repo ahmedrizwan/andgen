@@ -102,7 +102,7 @@ module MessagePrinter
   end
 
   def version_0
-    puts 'Andgen v1.0.0'
+    puts 'Andgen v0.0.1'
   end
 
 end
