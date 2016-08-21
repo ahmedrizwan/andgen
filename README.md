@@ -18,7 +18,34 @@ brew install andgen
 ```
 andgen --help
 ```
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/help.png" width="550px" />
+
 ####Generating Activities
+```
+andgen activity
+```
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity.png" width="550px" />
+
+Just create activity
+```
+andgen activity SomeActivity
+```
+Create activity with Layout
+```
+andgen activity -l SomeActivity
+```
+Create activity with bindable layout
+```
+andgen activity -bl SomeActivity
+```
+Create acvivity and place it inside some package
+```
+andgen activity SomeActivity com.something.somethingelse
+```
+No one would want to write down full package! So simply do this
+```
+andgen activity SomeActivity somethingelse
+```
 
 ####Generating Fragments
 
