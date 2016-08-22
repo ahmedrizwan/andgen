@@ -75,7 +75,7 @@ module MessagePrinter
   end
 
   def created file
-    puts "#{colorize("  Created   ", "yellow")}"+file
+    puts "#{colorize("  Created   ", "yellow")}"+file.sub(@module_dir.to_s+'/','')
   end
 
   def updated file
@@ -239,7 +239,7 @@ module Helper
         line_number = 0
         lines.each do |line|
           if line.to_s.include?('</application>')
-            lines[line_number-1] << get_manifest_activity(package+'.'+activity)
+            lines[line_number-1] << get_manifest_activity(package.to_s+'.'+activity)
           end
           line_number = line_number+1
         end
@@ -392,7 +392,6 @@ module Activity
 
   def create_activity file_name
     target_path = get_me_path_for "/src/main/java"
-
     if target_path.to_s.end_with? '.java'
       file = File.dirname(target_path)+'/'+file_name+'.java'
     else
@@ -438,10 +437,10 @@ module Activity
       package = package.to_a.join('.')
       package_statement = 'package '+ package+';'
       create_file file, activity_template(file_name, package_statement)
-      add_activity_to_manifest package, file_name
     else
       create_file file, activity_template(file_name, '')
     end
+    add_activity_to_manifest package, file_name
   end
 
 end
