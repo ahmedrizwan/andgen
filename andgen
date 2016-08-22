@@ -3,7 +3,7 @@
 module MessagePrinter
 
   def colorize(text, color = "default", bgColor = "default")
-    colors = {"default" => "38", "black" => "30", "red" => "31", "green" => "32", "brown" => "33", "blue" => "34", "purple" => "35",
+    colors = {"default" => "38", "black" => "30", "red" => "31", "green" => "1;32", "brown" => "33", "blue" => "1;34", "purple" => "35",
               "cyan" => "36", "gray" => "37", "dark gray" => "1;30", "light red" => "1;31", "light green" => "1;32", "yellow" => "1;33",
               "light blue" => "1;34", "light purple" => "1;35", "light cyan" => "1;36", "white" => "1;37"}
     bgColors = {"default" => "0", "black" => "40", "red" => "41", "green" => "42", "brown" => "43", "blue" => "44",
@@ -20,6 +20,10 @@ module MessagePrinter
 
   def green message
     "#{colorize(message, "green")}"
+  end
+
+  def blue message
+    "#{colorize(message, "blue")}"
   end
 
   def yellow message
@@ -75,11 +79,11 @@ module MessagePrinter
   end
 
   def created file
-    puts "#{colorize("  Created   ", "yellow")}"+file.sub(@module_dir.to_s+'/','')
+    puts "#{colorize("  Created   ", 'green')}"+file.sub(@module_dir.to_s+'/', '')
   end
 
   def updated file
-    puts "#{colorize("  Updated   ", "green")}"+file
+    puts "#{colorize("  Updated   ", 'blue')}"+file
   end
 
   def help_0
@@ -374,7 +378,10 @@ module Activity
 
   def activity_2 flag_or_name, package_or_name
     if is_flag? flag_or_name
-      create_layout_file flag_or_name, package_or_name
+      layout_name = underscore package_or_name
+      layout_name = layout_name.split('_').reverse.join('_')
+
+      create_layout_file flag_or_name, layout_name
       create_activity package_or_name
     else
       create_activity_package flag_or_name, package_or_name
@@ -383,7 +390,9 @@ module Activity
 
   def activity_3 flag, name, package
     if is_flag? flag
-      create_layout_file flag, name
+      layout_name = underscore name
+      layout_name = layout_name.split('_').reverse.join('_')
+      create_layout_file flag, layout_name
       create_activity_package name, package
     else
       not_correct_format
