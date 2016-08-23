@@ -127,7 +127,7 @@ module Helper
   def resolve_package package
     src_path = ''
     #check if the source path is found
-    Dir.glob('**/src/main/*').select {
+    Dir.glob('**/src/*/*').select {
         |d|
       if d.to_s.end_with? 'java'
         src_path = d +'/'
@@ -142,7 +142,7 @@ module Helper
     path_from_package = package.to_s.gsub '.', '/'
     paths = []
     #find the path
-    Dir.glob("**/main/java/**/*").select {
+    Dir.glob("**/*/java/**/*").select {
         |d|
       if d.to_s.end_with? path_from_package
         paths << d
@@ -205,12 +205,23 @@ module Helper
   end
 
   def find_me_manifest
-    d = Dir.glob("**/main/**/*").select {
+    manifests = []
+    d = Dir.glob("**/src/**/AndroidManifest.xml").select {
         |file|
-      if File.basename(file).to_s == 'AndroidManifest.xml'
-        return file
-      end
+      manifests << file
     }
+    if manifests.length>1
+      puts yellow 'Manifest conflict - Select one from the following'
+      index = 0
+      manifests.each do |p|
+        puts "#{index+1}. " + p
+        index+=1
+      end
+      manifest = get_selection(manifests)
+      return manifest
+    elsif manifests.length == 1
+      return manifests[0]
+    end
     return :nothing
   end
 
@@ -487,7 +498,7 @@ module Fragment
   end
 
   def create_fragment file_name, layout_version
-    target_path = get_me_path_for "/src/main/java"
+    target_path = get_me_path_for "/src/*/java"
 
     if target_path.to_s.end_with? '.java'
       file = File.dirname(target_path)+'/'+file_name+'.java'
@@ -590,7 +601,7 @@ module Layout
       return
     end
     #it is a flag :)
-    layout_path = get_me_path_for "/src/main/res/layout"
+    layout_path = get_me_path_for "/src/*/res/layout"
     file_name = underscore layout_name
     file = layout_path+'/'+file_name+'.xml'
     if File.file?(file)
