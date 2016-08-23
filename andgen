@@ -3,7 +3,7 @@
 module MessagePrinter
 
   def colorize(text, color = "default", bgColor = "default")
-    colors = {"default" => "38", "black" => "30", "red" => "31", "green" => "1;32", "brown" => "33", "blue" => "1;34", "purple" => "35",
+    colors = {"default" => "38", "black" => "30", "red" => "1;31", "green" => "1;32", "brown" => "33", "blue" => "1;34", "purple" => "35",
               "cyan" => "36", "gray" => "37", "dark gray" => "1;30", "light red" => "1;31", "light green" => "1;32", "yellow" => "1;33",
               "light blue" => "1;34", "light purple" => "1;35", "light cyan" => "1;36", "white" => "1;37"}
     bgColors = {"default" => "0", "black" => "40", "red" => "41", "green" => "42", "brown" => "43", "blue" => "44",
@@ -36,15 +36,15 @@ module MessagePrinter
 
   def command_not_found
     puts
-    puts error("Command not found, use --help to see available commands.")
+    error("Command not found, use --help to see available commands.")
   end
 
   def wrong_number_of_args
-    puts error("Wrong number of arguments, use --help to see correct format and commands.")
+    error("Wrong number of arguments, use --help to see correct format and commands.")
   end
 
   def not_correct_format
-    puts error("Not a correct format, use --help to see available options.")
+    error("Not a correct format, use --help to see available options.")
   end
 
   def flags_and_package_optional
@@ -139,7 +139,7 @@ module Helper
       @flavor = get_selection flavors.to_a
 
     elsif flavors.length == 1
-      @flavor = flavors[0]
+      @flavor = flavors.to_a[0]
     end
   end
 
@@ -286,7 +286,7 @@ module Helper
     path = find_me_manifest
     case path
       when :nothing
-        puts error 'Manifest not found!'
+        error 'Manifest not found!'
       else
         lines = File.readlines(path)
         line_number = 0
@@ -497,7 +497,7 @@ module Activity
       file = target_path+'/'+file_name+'.java'
     end
     if File.file?(file)
-      puts error(file +" already exists!")
+      error(file.sub(@module_dir+'/','') +" already exists!")
       return
     end
     create_activity_files(file, file_name, File.dirname(target_path))
@@ -511,7 +511,7 @@ module Activity
       #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
       if File.file?(file)
-        puts error(file +" already exists!")
+        error(file +" already exists!")
         return
       end
       create_activity_files(file, file_name, package_path)
@@ -598,7 +598,7 @@ module Fragment
       file = target_path+'/'+file_name+'.java'
     end
     if File.file?(file)
-      puts error(file +" already exists!")
+      error(file +" already exists!")
       return
     end
     if layout_version
@@ -615,7 +615,7 @@ module Fragment
       #simply create the Activity inside the package
       file = package_path.to_s+'/'+file_name+'.java'
       if File.file?(file)
-        puts error(file +" already exists!")
+        error(file +" already exists!")
         return
       end
       if layout_version
@@ -709,7 +709,7 @@ module Layout
     file_name = underscore layout_name
     file = layout_path +'/'+file_name+'.xml'
     if File.file?(file)
-      puts error(file +" already exists!")
+      error(file +" already exists!")
       return
     end
 
@@ -802,7 +802,6 @@ class ArgumentsHandler
   end
 
 end
-
 
 require 'fileutils'
 require 'set'
