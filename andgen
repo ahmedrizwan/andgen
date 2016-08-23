@@ -113,11 +113,38 @@ end
 
 module Helper
 
+  def select_flavor
+    #see how many flavors you have
+    #app -> src -> flavor -> java
+    flavors = Set.new
+    Dir.glob('**/src/*/*').select {
+        |dir|
+      if dir.to_s.end_with? 'java' or dir.to_s.end_with? 'res' and !dir.to_s.downcase.include? 'test'
+        flavors.add File.dirname(dir).sub('src/','')
+      end
+    }
+    if flavors.length > 1
+      puts yellow('Select Flavor for your command')
+      index = 1
+      flavors.each do
+      |f|
+        puts "#{index}. #{f}"
+        index+=1
+      end
+      @flavor = get_selection flavors.to_a
+
+    elsif flavors.length == 1
+      @flavor = flavors[0]
+    end
+  end
+
   def is_flag? flag_or_name
     case flag_or_name
       when '-l'
+        @flag = :layout
         return true
       when '-bl'
+        @flag = :bindable_layout
         return true
       else
         return false
@@ -129,7 +156,7 @@ module Helper
     #check if the source path is found
     Dir.glob('**/src/*/*').select {
         |d|
-      if d.to_s.end_with? 'java'
+      if d.to_s.end_with? 'java' and !d.to_s.downcase.include? 'test'
         src_path = d +'/'
       end
     }
@@ -144,7 +171,7 @@ module Helper
     #find the path
     Dir.glob("**/*/java/**/*").select {
         |d|
-      if d.to_s.end_with? path_from_package
+      if d.to_s.end_with? path_from_package and !d.to_s.downcase.include? 'test'
         paths << d
       end
     }
@@ -240,6 +267,12 @@ module Helper
     path
   end
 
+  def get_layout_name name
+    layout_name = underscore name
+    layout_name = layout_name.split('_').reverse.join('_')
+    layout_name
+  end
+
   def is_numeric input
     true if Integer(input) rescue false
   end
@@ -274,7 +307,6 @@ module Helper
 
   def get_me_path_for path
     Dir.chdir(@module_dir)
-    src_path = @module_dir+path
     FileUtils.mkpath src_path
     target_path = Dir.glob(src_path+"/**/*").last
     target_path = src_path if target_path == nil
@@ -298,6 +330,44 @@ public class #{name} extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+    }
+
+}"
+  end
+
+  def activity_layout_template name, package
+    return "#{package}
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class #{name} extends AppCompatActivity
+{
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.#{get_layout_name(name)});
+    }
+
+}"
+  end
+
+  def activity_bindable_template name, package
+    layout_name = get_layout_name(name)
+
+    return "#{package}
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class #{name} extends AppCompatActivity
+{
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        DatabindingUtil.setContentView(this, R.layout.#{layout_name});
     }
 
 }"
@@ -456,11 +526,23 @@ module Activity
     if package.length>0
       package = package.to_a.join('.')
       package_statement = 'package '+ package+';'
-      create_file file, activity_template(file_name, package_statement)
+      generate_template file, file_name, package_statement
     else
       create_file file, activity_template(file_name, '')
+      generate_template file, file_name, ''
     end
     add_activity_to_manifest package, file_name
+  end
+
+  def generate_template file, file_name, package_statement
+    case @flag
+      when :layout
+        create_file file, activity_layout_template(file_name, package_statement)
+      when :bindable_layout
+        create_file file, activity_bindable_template(file_name, package_statement)
+      else
+        create_file file, activity_template(file_name, package_statement)
+    end
   end
 
 end
@@ -594,31 +676,52 @@ module Layout
   end
 
   def create_layout_file flag, layout_name
-    #return if it's not a flag
+    # return if it's not a flag
     if !flag.to_s.eql? '-l' and !flag.to_s.eql? '-bl'
       error '-l or -bl expected as flag!'
       layout_examples
       return
     end
-    #it is a flag :)
-    layout_path = get_me_path_for "/src/*/res/layout"
-    file_name = underscore layout_name
-    file = layout_path+'/'+file_name+'.xml'
-    if File.file?(file)
-      puts error(file +" already exists!")
-      return
+
+    src_path = ''
+    #check if the source path is found
+    Dir.glob('**/src/*/**').select {
+        |d|
+      if d.to_s.end_with? 'layout' and !d.to_s.downcase.include? 'test'
+        src_path = d +'/'
+      end
+    }
+    if src_path == ''
+      error ('Layout path not found i.e. /res/layout')
+      return false
     end
 
-    if flag == '-l'
-      File.open(file, 'w') { |f| f.write layout_template }
-    elsif flag == '-bl'
-      File.open(file, 'w') { |f| f.write bindable_layout_template }
-    else
-      error '-l or -bl expected as flag!'
-      layout_examples
-      return
-    end
-    created file
+    #return if it's not a flag
+    # if !flag.to_s.eql? '-l' and !flag.to_s.eql? '-bl'
+    #   error '-l or -bl expected as flag!'
+    #   layout_examples
+    #   return
+    # end
+    # #find the path for layout
+    # layout_path = get_me_path_for "layout"
+    # return
+    # file_name = underscore layout_name
+    # file = layout_path+'/'+file_name+'.xml'
+    # if File.file?(file)
+    #   puts error(file +" already exists!")
+    #   return
+    # end
+    #
+    # if flag == '-l'
+    #   File.open(file, 'w') { |f| f.write layout_template }
+    # elsif flag == '-bl'
+    #   File.open(file, 'w') { |f| f.write bindable_layout_template }
+    # else
+    #   error '-l or -bl expected as flag!'
+    #   layout_examples
+    #   return
+    # end
+    # created file
   end
 
   def layout_0
@@ -662,7 +765,12 @@ class ArgumentsHandler
 
   def command_is_accepted? command
     accepted_commands = ['activity', 'fragment', 'layout', '--help', '--version']
-    accepted_commands.to_a.include?(command.to_s.downcase)
+    if accepted_commands.to_a.include?(command.to_s.downcase)
+      select_flavor
+      return true
+    else
+      return false
+    end
   end
 
   def handle_zero_args
@@ -701,9 +809,13 @@ class ArgumentsHandler
       command_not_found
     end
   end
+
+
 end
 
+
 require 'fileutils'
+require 'set'
 
 include MessagePrinter
 include Helper
@@ -712,6 +824,5 @@ include Fragment
 include Layout
 include Templates
 
-ArgumentsHandler.new.start
-
+ArgumentsHandler.new.select_flavor
 
