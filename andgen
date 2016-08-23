@@ -113,6 +113,11 @@ end
 
 module Helper
 
+  def command_is_accepted? command
+    accepted_commands = ['activity', 'fragment', 'layout', '--help', '--version']
+    accepted_commands.to_a.include?(command.to_s.downcase)
+  end
+
   def select_flavor
     #see how many flavors you have
     #app -> src -> flavor -> java
@@ -120,7 +125,7 @@ module Helper
     Dir.glob('**/src/*/*').select {
         |dir|
       if dir.to_s.end_with? 'java' or dir.to_s.end_with? 'res' and !dir.to_s.downcase.include? 'test'
-        flavors.add File.dirname(dir).sub('src/','')
+        flavors.add File.dirname(dir).sub('src/', '')
       end
     }
     if flavors.length > 1
@@ -233,7 +238,7 @@ module Helper
 
   def find_me_manifest
     manifests = []
-    d = Dir.glob("**/src/**/AndroidManifest.xml").select {
+    Dir.glob("**/src/#{@flavor}/AndroidManifest.xml").select {
         |file|
       manifests << file
     }
@@ -307,6 +312,7 @@ module Helper
 
   def get_me_path_for path
     Dir.chdir(@module_dir)
+    src_path = @module_dir+path
     FileUtils.mkpath src_path
     target_path = Dir.glob(src_path+"/**/*").last
     target_path = src_path if target_path == nil
@@ -453,11 +459,13 @@ module Activity
     if is_flag?(flag_or_name)
       activity_examples
     else
+      select_flavor
       create_activity flag_or_name
     end
   end
 
   def activity_2 flag_or_name, package_or_name
+    select_flavor
     if is_flag? flag_or_name
       layout_name = underscore package_or_name
       layout_name = layout_name.split('_').reverse.join('_')
@@ -471,6 +479,7 @@ module Activity
 
   def activity_3 flag, name, package
     if is_flag? flag
+      select_flavor
       layout_name = underscore name
       layout_name = layout_name.split('_').reverse.join('_')
       create_layout_file flag, layout_name
@@ -481,7 +490,7 @@ module Activity
   end
 
   def create_activity file_name
-    target_path = get_me_path_for "/src/main/java"
+    target_path = get_me_path_for "/src/#{@flavor}/java"
     if target_path.to_s.end_with? '.java'
       file = File.dirname(target_path)+'/'+file_name+'.java'
     else
@@ -496,6 +505,7 @@ module Activity
   end
 
   def create_activity_package file_name, package
+    select_flavor
     package_path = resolve_package package
     if package_path
       #simply create the Activity inside the package
@@ -676,6 +686,7 @@ module Layout
   end
 
   def create_layout_file flag, layout_name
+
     # return if it's not a flag
     if !flag.to_s.eql? '-l' and !flag.to_s.eql? '-bl'
       error '-l or -bl expected as flag!'
@@ -683,45 +694,35 @@ module Layout
       return
     end
 
-    src_path = ''
+    layout_path = ''
     #check if the source path is found
-    Dir.glob('**/src/*/**').select {
+    Dir.glob("**/src/#{@flavor}/res/layout").select {
         |d|
-      if d.to_s.end_with? 'layout' and !d.to_s.downcase.include? 'test'
-        src_path = d +'/'
-      end
+      layout_path = d
     }
-    if src_path == ''
-      error ('Layout path not found i.e. /res/layout')
-      return false
+    if layout_path == ''
+      #create the dir
+      FileUtils.mkpath(@module_dir+"/src/#{@flavor}/res/layout")
+      layout_path = @module_dir+"/src/#{@flavor}/res/layout"
     end
 
-    #return if it's not a flag
-    # if !flag.to_s.eql? '-l' and !flag.to_s.eql? '-bl'
-    #   error '-l or -bl expected as flag!'
-    #   layout_examples
-    #   return
-    # end
-    # #find the path for layout
-    # layout_path = get_me_path_for "layout"
-    # return
-    # file_name = underscore layout_name
-    # file = layout_path+'/'+file_name+'.xml'
-    # if File.file?(file)
-    #   puts error(file +" already exists!")
-    #   return
-    # end
-    #
-    # if flag == '-l'
-    #   File.open(file, 'w') { |f| f.write layout_template }
-    # elsif flag == '-bl'
-    #   File.open(file, 'w') { |f| f.write bindable_layout_template }
-    # else
-    #   error '-l or -bl expected as flag!'
-    #   layout_examples
-    #   return
-    # end
-    # created file
+    file_name = underscore layout_name
+    file = layout_path +'/'+file_name+'.xml'
+    if File.file?(file)
+      puts error(file +" already exists!")
+      return
+    end
+
+    if flag == '-l'
+      File.open(file, 'w') { |f| f.write layout_template }
+    elsif flag == '-bl'
+      File.open(file, 'w') { |f| f.write bindable_layout_template }
+    else
+      error '-l or -bl expected as flag!'
+      layout_examples
+      return
+    end
+    created file
   end
 
   def layout_0
@@ -763,16 +764,6 @@ class ArgumentsHandler
 
   end
 
-  def command_is_accepted? command
-    accepted_commands = ['activity', 'fragment', 'layout', '--help', '--version']
-    if accepted_commands.to_a.include?(command.to_s.downcase)
-      select_flavor
-      return true
-    else
-      return false
-    end
-  end
-
   def handle_zero_args
     use_help
   end
@@ -810,7 +801,6 @@ class ArgumentsHandler
     end
   end
 
-
 end
 
 
@@ -824,5 +814,5 @@ include Fragment
 include Layout
 include Templates
 
-ArgumentsHandler.new.select_flavor
+ArgumentsHandler.new.start
 
