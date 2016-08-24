@@ -2,10 +2,12 @@
 #Andgen
 
 
-A terminal based templates generator for Android! It's similar to what 'rails generate' command does on Ruby on Rails.
+A terminal based templates generator for Android! 
+
+It's similar to what 'rails generate' command does on Ruby on Rails.
 
 ###Why?
-Because terminals are awesome! That's why!
+Because terminals are awesome! 
 
 ###Installation
 Using HomeBrew
@@ -20,28 +22,42 @@ andgen --help
 ```
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/help.png" width="550px" />
 
-####Generating Activities
+###Generating Activities
 ```
 andgen activity
 ```
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity.png" width="550px" />
 
-Just create activity
+####Simple activity creation
 ```
 andgen activity SomeActivity
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_create.png"  />
-Create activity with Layout
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_create.png" width="550px"  />
+
+Generated file will look like
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_file.png" width="550px"  />
+
+####Create activity with Layout
 ```
 andgen activity -l SomeActivity
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_layout_create.png" />
-Create activity with bindable layout
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_layout_create.png" width="550px"  />
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/simple_layout.png" width="550px"  />
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_layout_file.png" width="550px"  />
+
+####Create activity with bindable layout
 ```
 andgen activity -bl SomeActivity
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_layout_create.png" />
-Create acvivity and place it inside some package
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_layout_create.png" width="550px"  />
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/bindable_layout.png" width="550px"  />
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_binding_file.png" width="550px"  />
+####Create acvivity and place it inside some package
 ```
 andgen activity SomeActivity com.example
 ```
@@ -58,26 +74,55 @@ No worries, andgen will ask you to select the package
 
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_package_conflict.png"  width="550px"/>
 
-####Generating Fragments
+###Generating Fragments
 
 Same commands and format as Activities
+
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/fragment.png"  width="650px"/>
 
-####Generating Layouts
+####Simple Fragment
+
+``` andgen fragment SomeFragment ```
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/fragment_create.png"  width="550px"/>
+
+####Fragment with a Layout
+
+``` andgen fragment -l SomeFragment ```
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/fragment_layout_create.png"  width="550px"/>
+
+####Fragment with a Bindable Layout
+
+``` andgen fragment -bl SomeFragment ```
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/fragment_layout_create.png"  width="550px"/>
+
+This will generate code like 
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/fragment_file.png"  width="550px"/>
+
+###Generating Layouts
 For a simple layout
 ```
 andgen layout my_layout
 ```
-And for bindable layout (which is enclosed inside <layout> tag)
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/layout_create.png" width="550px"/>
+
+And for bindable layout (which is enclosed inside *layout* tag)
 ```
 andgen layout -bl my_layout
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/layout.png"/>
+
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/bindable_layout.png" width="550px"/>
 
 ###TODO
 * Add more templates : EmptyActivity, ListActivity and so on
 * Add third party templates for : Mosby, Conductor etc
-* Fix bugs (of course)
+* Fix bugs
+
+[More Details](www.google.com)
 
 ##License 
 ```
