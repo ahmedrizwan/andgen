@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+
+#app -> src -> flavor -> java
 module MessagePrinter
 
   def colorize(text, color = "default", bgColor = "default")
@@ -166,15 +168,22 @@ module Helper
       end
     }
     if src_path == ''
-      error ('Source path not found i.e. /src/main/java/')
+      error ('Source path not found i.e. the java folder')
       return false
     end
 
+    #handle empty path
+    if package.to_s.eql? ''
+      #return the top-most package
+      top_package = Dir.glob("**/#{@flavor}/java/**/*").last
+      return File.dirname(top_package)
+    end
     #create package path and return it
     path_from_package = package.to_s.gsub '.', '/'
     paths = []
+
     #find the path
-    Dir.glob("**/*/java/**/*").select {
+    Dir.glob("**/#{@flavor}/java/**/*").select {
         |d|
       if d.to_s.end_with? path_from_package and !d.to_s.downcase.include? 'test'
         paths << d
@@ -360,27 +369,29 @@ public class #{name} extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.#{get_layout_name(name)});
+        setContentView(R.layout.#{@layout_name});
     }
 
 }"
   end
 
   def activity_bindable_template name, package
-    layout_name = get_layout_name(name)
-
+    binding_name = get_binding_name
     return "#{package}
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.databinding.DataBindingUtil;
 
 public class #{name} extends AppCompatActivity
 {
+
+    #{binding_name} mBinding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        DatabindingUtil.setContentView(this, R.layout.#{layout_name});
+        mBinding = DatabindingUtil.setContentView(this, R.layout.#{@layout_name});
     }
 
 }"
@@ -428,10 +439,45 @@ public class #{name} extends Fragment
                              Bundle savedInstanceState)
     {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.#{underscore(name)}, container, false);
+        return inflater.inflate(R.layout.#{@layout_name}, container, false);
     }
 
 }"
+  end
+
+  def fragment_bindable_template name, package
+    binding_name = get_binding_name
+    return "#{package}
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.databinding.DataBindingUtil;
+
+public class #{name} extends Fragment
+{
+    #{binding_name} mBinding;
+
+    public #{name}()
+    {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState)
+    {
+        mBinding = DataBindingUtil.inflate(inflater, R.layout.#{@layout_name}, container, false);
+        return mBinding.getRoot();
+    }
+
+}"
+  end
+
+  def get_binding_name
+    @layout_name.split('_').collect(&:capitalize).join + "Binding"
   end
 
   def layout_template
@@ -467,67 +513,61 @@ module Activity
       activity_examples
     else
       select_flavor
-      create_activity flag_or_name
+      if create_activity flag_or_name, ''
+        add_activity_to_manifest '', flag_or_name
+      end
     end
   end
 
   def activity_2 flag_or_name, package_or_name
     select_flavor
     if is_flag? flag_or_name
-      layout_name = underscore package_or_name
-      layout_name = layout_name.split('_').reverse.join('_')
-
-      create_layout_file flag_or_name, layout_name
-      create_activity package_or_name
+      @layout_name = underscore package_or_name
+      @layout_name = @layout_name.split('_').reverse.join('_')
+      package = create_activity package_or_name, ''
+      if package
+        create_layout_file @layout_name, package_or_name
+      end
     else
-      create_activity_package flag_or_name, package_or_name
+      package = create_activity flag_or_name, package_or_name
+      if package
+        add_activity_to_manifest package, flag_or_name
+      end
     end
   end
 
   def activity_3 flag, name, package
     if is_flag? flag
       select_flavor
-      layout_name = underscore name
-      layout_name = layout_name.split('_').reverse.join('_')
-      create_layout_file flag, layout_name
-      create_activity_package name, package
+      @layout_name = underscore name
+      @layout_name = @layout_name.split('_').reverse.join('_')
+      package = create_activity name, package
+      if package
+        create_layout_file flag, @layout_name
+        add_activity_to_manifest package, name
+      end
     else
       not_correct_format
     end
   end
 
-  def create_activity file_name
-    target_path = get_me_path_for "/src/#{@flavor}/java"
-    if target_path.to_s.end_with? '.java'
-      file = File.dirname(target_path)+'/'+file_name+'.java'
+  def create_activity file_name, package
+    if package.to_s.eql? ''
+      #no package
+      package_path = resolve_package package
     else
-      file = target_path+'/'+file_name+'.java'
+      package_path = resolve_package package
     end
+
+    #find me the path for java folder and package
+    file = package_path+'/'+file_name+'.java'
+
     if File.file?(file)
-      error(file.sub(@module_dir+'/','') +" already exists!")
-      return
+      error(file.sub(@module_dir+'/', '') +" already exists!")
+      return false
     end
-    create_activity_files(file, file_name, File.dirname(target_path))
 
-  end
-
-  def create_activity_package file_name, package
-    select_flavor
-    package_path = resolve_package package
-    if package_path
-      #simply create the Activity inside the package
-      file = package_path.to_s+'/'+file_name+'.java'
-      if File.file?(file)
-        error(file +" already exists!")
-        return
-      end
-      create_activity_files(file, file_name, package_path)
-    end
-  end
-
-  def create_activity_files(file, file_name, package_path)
-    target_path = package_path
-    target_array = target_path.to_s.split('/')
+    target_array = package_path.to_s.split('/')
     package = []
     add = false
     target_array.select {
@@ -543,15 +583,14 @@ module Activity
     if package.length>0
       package = package.to_a.join('.')
       package_statement = 'package '+ package+';'
-      generate_template file, file_name, package_statement
+      generate_activity_template file, file_name, package_statement
     else
-      create_file file, activity_template(file_name, '')
-      generate_template file, file_name, ''
+      generate_activity_template file, file_name, ''
     end
-    add_activity_to_manifest package, file_name
+    return package
   end
 
-  def generate_template file, file_name, package_statement
+  def generate_activity_template file, file_name, package_statement
     case @flag
       when :layout
         create_file file, activity_layout_template(file_name, package_statement)
@@ -574,112 +613,90 @@ module Fragment
     if is_flag?(flag_or_name)
       fragment_examples
     else
-      create_fragment flag_or_name, false
+      select_flavor
+      create_fragment flag_or_name, ''
     end
   end
 
   def fragment_2 flag_or_name, package_or_name
+    select_flavor
     if is_flag? flag_or_name
-      create_layout_file flag_or_name, package_or_name
-      create_fragment package_or_name, true
+      @layout_name = underscore package_or_name
+      @layout_name = @layout_name.split('_').reverse.join('_')
+      package = create_fragment package_or_name, ''
+      if package
+        create_layout_file flag_or_name, @layout_name
+      end
     else
-      create_fragment_package flag_or_name, package_or_name, false
+      create_fragment flag_or_name, package_or_name
     end
   end
 
   def fragment_3 flag, name, package
     if is_flag? flag
-      create_layout_file flag, name
-      create_fragment_package name, package, true
+      select_flavor
+      @layout_name = underscore name
+      @layout_name = @layout_name.split('_').reverse.join('_')
+      package = create_fragment name, package
+      if package
+        create_layout_file flag, @layout_name
+      end
     else
       not_correct_format
     end
   end
 
-  def create_fragment file_name, layout_version
-    target_path = get_me_path_for "/src/*/java"
-
-    if target_path.to_s.end_with? '.java'
-      file = File.dirname(target_path)+'/'+file_name+'.java'
+  def create_fragment file_name, package
+    if package.to_s.eql? ''
+      #no package
+      package_path = resolve_package package
     else
-      file = target_path+'/'+file_name+'.java'
+      package_path = resolve_package package
     end
+
+    #find me the path for java folder and package
+    file = package_path+'/'+file_name+'.java'
+
     if File.file?(file)
-      error(file +" already exists!")
-      return
-    end
-    if layout_version
-      create_layout_fragment_files(file, file_name, File.dirname(target_path))
-    else
-      create_fragment_files(file, file_name, File.dirname(target_path))
+      error(file.sub(@module_dir+'/', '') +" already exists!")
+      return false
     end
 
+    target_array = package_path.to_s.split('/')
+    package = []
+    add = false
+    target_array.select {
+        |e|
+      if add
+        package << e
+      end
+
+      if e == 'java'
+        add = true
+      end
+    }
+    if package.length>0
+      package = package.to_a.join('.')
+      package_statement = 'package '+ package+';'
+      generate_fragment_template file, file_name, package_statement
+    else
+      generate_fragment_template file, file_name, ''
+    end
+    return package
   end
 
-  def create_fragment_package file_name, package, layout_version
-    package_path = resolve_package package
-    if package_path
-      #simply create the Activity inside the package
-      file = package_path.to_s+'/'+file_name+'.java'
-      if File.file?(file)
-        error(file +" already exists!")
-        return
-      end
-      if layout_version
-        create_layout_fragment_files(file, file_name, package_path)
+  def generate_fragment_template file, file_name, package_statement
+    case @flag
+      when :layout
+        create_file file, fragment_layout_template(file_name, package_statement)
+      when :bindable_layout
+        create_file file, fragment_bindable_template(file_name, package_statement)
       else
-        create_fragment_files(file, file_name, package_path)
-      end
+        create_file file, fragment_template(file_name, package_statement)
     end
   end
 
-  def create_fragment_files(file, file_name, package_path)
-    target_path = package_path
-    target_array = target_path.to_s.split('/')
-    package = []
-    add = false
-    target_array.select {
-        |e|
-      if add
-        package << e
-      end
 
-      if e == 'java'
-        add = true
-      end
-    }
-    if package.length>0
-      package = package.to_a.join('.')
-      package_statement = 'package '+ package+';'
-      create_file file, fragment_template(file_name, package_statement)
-    else
-      create_file file, fragment_template(file_name, '')
-    end
-  end
-
-  def create_layout_fragment_files(file, file_name, package_path)
-    target_path = package_path
-    target_array = target_path.to_s.split('/')
-    package = []
-    add = false
-    target_array.select {
-        |e|
-      if add
-        package << e
-      end
-
-      if e == 'java'
-        add = true
-      end
-    }
-    if package.length>0
-      package = package.to_a.join('.')
-      package_statement = 'package '+ package+';'
-      create_file file, fragment_layout_template(file_name, package_statement)
-    else
-      create_file file, fragment_layout_template(file_name, '')
-    end
-  end
 end
 
 module Layout
