@@ -242,6 +242,13 @@ module Helper
         |file|
       manifests << file
     }
+    if manifests.length == 0
+      Dir.glob("**/src/**/AndroidManifest.xml").select {
+          |file|
+        manifests << file
+      }
+    end
+
     if manifests.length>1
       puts yellow 'Manifest conflict - Select one from the following'
       index = 0
