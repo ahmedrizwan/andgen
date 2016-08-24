@@ -513,8 +513,9 @@ module Activity
       activity_examples
     else
       select_flavor
-      if create_activity flag_or_name, ''
-        add_activity_to_manifest '', flag_or_name
+      package = create_activity flag_or_name, ''
+      if package
+        add_activity_to_manifest package, flag_or_name
       end
     end
   end
@@ -526,7 +527,8 @@ module Activity
       @layout_name = @layout_name.split('_').reverse.join('_')
       package = create_activity package_or_name, ''
       if package
-        create_layout_file @layout_name, package_or_name
+        create_layout_file flag_or_name, @layout_name
+        add_activity_to_manifest package, package_or_name
       end
     else
       package = create_activity flag_or_name, package_or_name
@@ -754,10 +756,12 @@ module Layout
   end
 
   def layout_1 name
+    select_flavor
     create_layout_file '-l', name
   end
 
   def layout_2 flag, name
+    select_flavor
     create_layout_file flag, name
   end
 
