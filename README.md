@@ -7,7 +7,7 @@ A terminal based templates generator for Android!
 It's similar to what 'rails generate' command does on Ruby on Rails.
 
 ###Why?
-Because terminals are awesome! 
+Because terminals are awesome! And some [other reasons] (https://medium.com/@ahmedrizwan/andgen-generating-android-templates-from-terminal-616e2cb3afa6#.uf1tstpsu)...
 
 ###Installation
 Using HomeBrew
@@ -122,7 +122,7 @@ andgen layout -bl my_layout
 * Add third party templates for : Mosby, Conductor etc
 * Fix bugs
 
-[More Details](www.google.com)
+[More Details](https://medium.com/@ahmedrizwan/andgen-generating-android-templates-from-terminal-616e2cb3afa6#.uf1tstpsu)
 
 ##License 
 ```
