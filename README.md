@@ -20,13 +20,13 @@ brew install andgen
 ```
 andgen --help
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/help.png" width="550px" />
 
 ###Generating Activities
+
+To check the format and examples, execute
 ```
 andgen activity
 ```
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity.png" width="550px" />
 
 ####Simple activity creation
 ```
