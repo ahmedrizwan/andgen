@@ -72,7 +72,7 @@ andgen activity SomeActivity example
 But what if there's a conflict!? 
 No worries, andgen will ask you to select the package
 
-<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_package_conflict.png"  width="550px"/>
+<img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_package_conflict.png"  width="450px"/>
 
 ###Generating Fragments
 
