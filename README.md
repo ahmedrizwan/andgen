@@ -127,7 +127,6 @@ andgen layout -bl my_layout
 ###TODO
 * Add more templates : EmptyActivity, ListActivity and so on
 * Add third party templates for : Mosby, Conductor etc
-* Fix bugs
 
 [More Details](https://medium.com/@ahmedrizwan/andgen-generating-android-templates-from-terminal-616e2cb3afa6#.uf1tstpsu)
 
