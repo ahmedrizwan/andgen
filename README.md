@@ -20,7 +20,7 @@ brew install andgen
 
 ###Usage
 
-Navigate to the module directory of your project 
+Step 0: Navigate to the module directory of your project 
 
 To see available commands and format, do
 
