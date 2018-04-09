@@ -65,13 +65,14 @@ andgen activity -bl SomeActivity
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/bindable_layout.png" width="550px"  />
 
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_binding_file.png" width="550px"  />
+
 #### Create acvivity and place it inside some package
 ```
 andgen activity SomeActivity com.example
 ```
 <img src="https://raw.githubusercontent.com/ahmedrizwan/homebrew-andgen/master/activity_package.png" width="550px" />
 
-No one would want to write down full package! So simply do this
+No one wants to write down full package! So simply do this
 ```
 andgen activity SomeActivity example
 ```
